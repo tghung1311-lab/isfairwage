@@ -33,6 +33,10 @@ import WorkplaceDetailPage from "./pages/WorkplaceDetailPage";
 import SubmitReviewPage from "./pages/SubmitReviewPage";
 import AddWorkplacePage from "./pages/AddWorkplacePage";
 import ConfirmationPage from "./pages/ConfirmationPage";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
+import AppHeader from "./components/AppHeader";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 /* Seed data — used only when localStorage is empty */
 const SEED_WORKPLACES: Workplace[] = [
@@ -83,9 +87,12 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <AppHeader />
       <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-8">
         <Routes>
           <Route path="/" element={<WelcomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
           {/* PATTERN: Props Down — workplaces & reviews passed in */}
           <Route path="/home" element={<HomePage workplaces={workplaces} reviews={reviews} />} />
           {/* PATTERN: Props Down */}
@@ -93,9 +100,9 @@ export default function App() {
           {/* PATTERN: Props Down */}
           <Route path="/workplace/:id" element={<WorkplaceDetailPage workplaces={workplaces} reviews={reviews} />} />
           {/* PATTERN: Props Down + Callbacks Up */}
-          <Route path="/submit-review/:id" element={<SubmitReviewPage workplaces={workplaces} onSubmitReview={handleSubmitReview} />} />
+          <Route path="/submit-review/:id" element={<ProtectedRoute><SubmitReviewPage workplaces={workplaces} onSubmitReview={handleSubmitReview} /></ProtectedRoute>} />
           {/* PATTERN: Callbacks Up */}
-          <Route path="/add-workplace" element={<AddWorkplacePage onAddWorkplace={handleAddWorkplace} />} />
+          <Route path="/add-workplace" element={<ProtectedRoute><AddWorkplacePage onAddWorkplace={handleAddWorkplace} /></ProtectedRoute>} />
           {/* PATTERN: Router State — reads useLocation().state */}
           <Route path="/confirmation" element={<ConfirmationPage />} />
         </Routes>

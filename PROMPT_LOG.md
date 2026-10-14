@@ -55,3 +55,7 @@
 ## D1 - Design (main screens)
 **Prompt:** Redesign the header, welcome, home, search, and workplace-detail screens with a responsive fintech visual system using Inter, blue and slate colors, and refined cards and controls, without changing logic, APIs, routing, data, or badge colors.
 **Result:** Applied the visual redesign to the requested main screens, kept BrandIcon and existing application behavior intact, and verified the frontend production build.
+
+## D2 - Workplace photos
+**Prompt:** Add nullable workplace photo support in the database and API, display seeded and user-provided images with industry fallbacks, serve public workplace photos on Vercel, and document photo credits without changing badge, privacy, or other behavior.
+**Result:** Added image URL persistence and validation, reusable workplace-image rendering with fallbacks, seeded demo mappings and static deployment routing, optional photo URL entry, photo-credit placeholders, and frontend build verification.

@@ -4,6 +4,7 @@ import type { WorkplaceDetail } from "../types";
 import { ApiError, getWorkplace } from "../lib/api";
 import SafetyBadge from "../components/ui/SafetyBadge";
 import FlowButton from "../components/ui/FlowButton";
+import WorkplaceImage from "../components/WorkplaceImage";
 
 export default function WorkplaceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -60,6 +61,7 @@ export default function WorkplaceDetailPage() {
   return (
     <div className="space-y-8">
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <WorkplaceImage imageUrl={workplace.image_url} name={workplace.name} industry={workplace.industry} className="mb-6 aspect-[21/9] w-full" />
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h1 className="mb-1 text-3xl font-extrabold tracking-tight text-slate-900">{workplace.name}</h1>

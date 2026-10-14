@@ -8,6 +8,7 @@
     { "src": "/api/(.*)", "dest": "api/index.py" },
     { "src": "/assets/(.*)", "dest": "/frontend/assets/$1" },
     { "src": "/favicon.svg", "dest": "/frontend/favicon.svg" },
+    { "src": "/workplaces/(.*)", "dest": "/frontend/workplaces/$1" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/frontend/index.html" }
   ]

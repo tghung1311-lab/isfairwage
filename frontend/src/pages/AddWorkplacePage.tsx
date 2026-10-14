@@ -9,6 +9,7 @@ export default function AddWorkplacePage() {
   const [name, setName] = useState("");
   const [suburb, setSuburb] = useState("");
   const [industry, setIndustry] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
@@ -17,8 +18,10 @@ export default function AddWorkplacePage() {
   if (touched.name && !name.trim()) errors.name = "Workplace name is required";
   if (touched.suburb && !suburb.trim()) errors.suburb = "Suburb is required";
   if (touched.industry && !industry.trim()) errors.industry = "Industry is required";
+  const isImageUrlValid = !imageUrl.trim() || imageUrl.trim().startsWith("https://");
+  if (touched.imageUrl && !isImageUrlValid) errors.imageUrl = "Photo URL must start with https://";
 
-  const isValid = Boolean(name.trim() && suburb.trim() && industry.trim());
+  const isValid = Boolean(name.trim() && suburb.trim() && industry.trim() && isImageUrlValid);
 
   function handleBlur(field: string) {
     setTouched((previous) => ({ ...previous, [field]: true }));
@@ -26,7 +29,7 @@ export default function AddWorkplacePage() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    setTouched({ name: true, suburb: true, industry: true });
+    setTouched({ name: true, suburb: true, industry: true, imageUrl: true });
     setServerError("");
 
     if (!isValid) {
@@ -42,6 +45,7 @@ export default function AddWorkplacePage() {
         name: name.trim(),
         suburb: suburb.trim(),
         industry,
+        image_url: imageUrl.trim() || undefined,
       });
       navigate("/confirmation", {
         state: {
@@ -86,6 +90,12 @@ export default function AddWorkplacePage() {
               <option value="Other">Other</option>
             </select>
             {errors.industry && <p className="mt-1 text-sm text-red-600">{errors.industry}</p>}
+          </div>
+          <div>
+            <label htmlFor="wp-image-url" className="block text-sm font-medium text-gray-700 mb-1">Photo URL (https only)</label>
+            <input id="wp-image-url" type="url" value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} onBlur={() => handleBlur("imageUrl")} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://example.com/workplace.jpg" />
+            <p className="mt-1 text-xs text-gray-500">Optional. Use a direct, publicly accessible image URL.</p>
+            {errors.imageUrl && <p className="mt-1 text-sm text-red-600">{errors.imageUrl}</p>}
           </div>
           {serverError && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{serverError}</p>}
           <PrimaryButton type="submit" disabled={!isValid || submitting}>{submitting ? "Adding workplace..." : "Add Workplace"}</PrimaryButton>

@@ -97,6 +97,7 @@ class CreateWorkplaceRequest(BaseModel):
     name: str
     suburb: str
     industry: str
+    image_url: str | None = None
 
     @field_validator("name", "suburb")
     @classmethod
@@ -114,6 +115,23 @@ class CreateWorkplaceRequest(BaseModel):
         cleaned_value = value.strip()
         if cleaned_value not in ALLOWED_INDUSTRIES:
             raise ValueError("Please select a valid industry.")
+        return cleaned_value
+
+    @field_validator("image_url", mode="before")
+    @classmethod
+    def validate_image_url(cls, value: Any) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError("Photo URL must be a valid https:// URL.")
+
+        cleaned_value = value.strip()
+        if not cleaned_value:
+            return None
+        if len(cleaned_value) > 500:
+            raise ValueError("Photo URL must be 500 characters or fewer.")
+        if not cleaned_value.startswith("https://"):
+            raise ValueError("Photo URL must start with https://.")
         return cleaned_value
 
 
@@ -204,13 +222,14 @@ def run_database_query(
 
 
 def workplace_summary_from_row(row: tuple[Any, ...]) -> dict[str, Any]:
-    average = float(row[5]) if row[5] is not None else None
+    average = float(row[6]) if row[6] is not None else None
     return {
         "id": str(row[0]),
         "name": row[1],
         "suburb": row[2],
         "industry": row[3],
-        "review_count": row[4],
+        "image_url": row[4],
+        "review_count": row[5],
         "average_hourly_pay": average,
         "badge": calculate_badge(average),
     }
@@ -431,7 +450,7 @@ def get_workplaces(
     cleaned_industry = industry.strip() if industry and industry.strip() else None
     cleaned_suburb = suburb.strip() if suburb and suburb.strip() else None
     query = """
-        SELECT w.id, w.name, w.suburb, w.industry,
+        SELECT w.id, w.name, w.suburb, w.industry, w.image_url,
                COUNT(r.id) AS review_count,
                ROUND(AVG(r.hourly_pay), 2) AS average_hourly_pay
         FROM public.workplaces AS w
@@ -439,7 +458,7 @@ def get_workplaces(
         WHERE (%s IS NULL OR w.name ILIKE '%%' || %s || '%%' OR w.suburb ILIKE '%%' || %s || '%%')
           AND (%s IS NULL OR w.industry ILIKE %s)
           AND (%s IS NULL OR w.suburb ILIKE %s)
-        GROUP BY w.id, w.name, w.suburb, w.industry
+        GROUP BY w.id, w.name, w.suburb, w.industry, w.image_url
         ORDER BY w.name
     """
     rows = run_database_query(
@@ -461,13 +480,13 @@ def get_workplaces(
 @app.get("/api/workplaces/{workplace_id}")
 def get_workplace(workplace_id: UUID, request: Request) -> dict[str, Any]:
     workplace_query = """
-        SELECT w.id, w.name, w.suburb, w.industry,
+        SELECT w.id, w.name, w.suburb, w.industry, w.image_url,
                COUNT(r.id) AS review_count,
                ROUND(AVG(r.hourly_pay), 2) AS average_hourly_pay
         FROM public.workplaces AS w
         LEFT JOIN public.reviews AS r ON r.workplace_id = w.id
         WHERE w.id = %s
-        GROUP BY w.id, w.name, w.suburb, w.industry
+        GROUP BY w.id, w.name, w.suburb, w.industry, w.image_url
     """
     workplace_rows = run_database_query(request, workplace_query, (str(workplace_id),))
     if not workplace_rows:
@@ -512,16 +531,16 @@ def create_workplace(
     current_user: UserResponse = Depends(get_current_user),
 ) -> dict[str, Any]:
     query = """
-        INSERT INTO public.workplaces (name, suburb, industry, created_by)
-        VALUES (%s, %s, %s, %s)
-        RETURNING id, name, suburb, industry
+        INSERT INTO public.workplaces (name, suburb, industry, image_url, created_by)
+        VALUES (%s, %s, %s, %s, %s)
+        RETURNING id, name, suburb, industry, image_url
     """
     try:
         with psycopg2.connect(request.app.state.database_url) as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
                     query,
-                    (payload.name, payload.suburb, payload.industry, current_user.id),
+                    (payload.name, payload.suburb, payload.industry, payload.image_url, current_user.id),
                 )
                 row = cursor.fetchone()
     except psycopg2.IntegrityError as error:
@@ -545,6 +564,7 @@ def create_workplace(
         "name": row[1],
         "suburb": row[2],
         "industry": row[3],
+        "image_url": row[4],
         "review_count": 0,
         "average_hourly_pay": None,
         "badge": "not-enough-data",

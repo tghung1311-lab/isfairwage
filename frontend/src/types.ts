@@ -9,6 +9,7 @@ export interface WorkplaceSummary {
   name: string;
   suburb: string;
   industry: string;
+  image_url: string | null;
   review_count: number;
   average_hourly_pay: number | null;
   badge: Badge;
@@ -33,6 +34,7 @@ export interface CreateWorkplaceData {
   name: string;
   suburb: string;
   industry: string;
+  image_url?: string;
 }
 
 export interface CreateReviewData {

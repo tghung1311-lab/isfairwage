@@ -128,3 +128,13 @@ Set `APP_BASE_URL` to the deployed Vercel site URL for that environment. The com
 ## Demo data
 
 The demo businesses and review data in this project are fictional and are provided for demonstration purposes only.
+
+## Photo credits
+
+The workplace photos are used for fictional demo workplaces only.
+
+- Bean & Brew Café — Photographer name, source: Unsplash
+- Golden Dragon Restaurant — Photographer name, source: Unsplash
+- QuickMart Convenience — Photographer name, source: Unsplash
+- SparkleClean Services — Photographer name, source: Unsplash
+- RiceRoll — Photographer name, source: Unsplash

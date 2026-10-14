@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS public.workplaces (
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
+ALTER TABLE workplaces ADD COLUMN IF NOT EXISTS image_url text;
+
 CREATE UNIQUE INDEX IF NOT EXISTS workplaces_name_suburb_unique
     ON public.workplaces (lower(name), lower(suburb));
 
@@ -46,6 +48,26 @@ VALUES
     ('33333333-3333-3333-3333-333333333333', 'QuickMart Convenience', 'Footscray', 'Retail'),
     ('44444444-4444-4444-4444-444444444444', 'SparkleClean Services', 'Box Hill', 'Cleaning')
 ON CONFLICT DO NOTHING;
+
+UPDATE public.workplaces
+SET image_url = '/workplaces/bean-brew.jpg'
+WHERE name = 'Bean & Brew Café' AND image_url IS NULL;
+
+UPDATE public.workplaces
+SET image_url = '/workplaces/golden-dragon.jpg'
+WHERE name = 'Golden Dragon Restaurant' AND image_url IS NULL;
+
+UPDATE public.workplaces
+SET image_url = '/workplaces/quickmart.jpg'
+WHERE name = 'QuickMart Convenience' AND image_url IS NULL;
+
+UPDATE public.workplaces
+SET image_url = '/workplaces/sparkleclean.jpg'
+WHERE name = 'SparkleClean Services' AND image_url IS NULL;
+
+UPDATE public.workplaces
+SET image_url = '/workplaces/riceroll.jpg'
+WHERE name = 'RiceRoll' AND image_url IS NULL;
 
 INSERT INTO public.reviews (
     id,

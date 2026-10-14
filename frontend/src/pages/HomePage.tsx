@@ -4,6 +4,7 @@ import type { WorkplaceSummary } from "../types";
 import { getWorkplaces } from "../lib/api";
 import SafetyBadge from "../components/ui/SafetyBadge";
 import FlowButton from "../components/ui/FlowButton";
+import WorkplaceImage from "../components/WorkplaceImage";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -76,6 +77,7 @@ export default function HomePage() {
                 to={`/workplace/${workplace.id}`}
                 className="group block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
               >
+                <WorkplaceImage imageUrl={workplace.image_url} name={workplace.name} industry={workplace.industry} className="mb-4 aspect-[16/9] w-full" />
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <h3 className="truncate font-bold text-slate-900 transition-colors group-hover:text-blue-700">{workplace.name}</h3>

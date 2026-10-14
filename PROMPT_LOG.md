@@ -51,3 +51,7 @@
 ## D0 - Brand icon
 **Prompt:** Add a reusable shield-and-dollar brand icon matching the favicon to the header and welcome page, preserve all other behavior, build the frontend, and commit on `design` without pushing.
 **Result:** Added `BrandIcon`, displayed it beside the header wordmark and above the welcome heading, verified the frontend production build, and committed the requested change.
+
+## D1 - Design (main screens)
+**Prompt:** Redesign the header, welcome, home, search, and workplace-detail screens with a responsive fintech visual system using Inter, blue and slate colors, and refined cards and controls, without changing logic, APIs, routing, data, or badge colors.
+**Result:** Applied the visual redesign to the requested main screens, kept BrandIcon and existing application behavior intact, and verified the frontend production build.

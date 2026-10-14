@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import type { WorkplaceSummary } from "../types";
 import { getWorkplaces } from "../lib/api";
 import SafetyBadge from "../components/ui/SafetyBadge";
-import FormSection from "../components/ui/FormSection";
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
@@ -51,65 +50,70 @@ export default function SearchPage() {
 
   return (
     <div className="space-y-6">
-      <FormSection title="Search Workplaces" subtitle="Find a workplace and check its pay-safety status.">
-        <div className="space-y-4">
+      <section aria-label="Search Workplaces" className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <div className="mb-6">
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">Search Workplaces</h1>
+          <p className="mt-2 text-sm text-slate-600">Find a workplace and check its pay-safety status.</p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">Search by name or suburb</label>
+            <label htmlFor="search" className="mb-1.5 block text-sm font-semibold text-slate-700">Search by name or suburb</label>
             <input
               id="search"
               type="text"
               value={query}
               onChange={(event) => handleSearchChange(event.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
               placeholder="e.g. Bean & Brew or Carlton"
             />
           </div>
           <div>
-            <label htmlFor="industry" className="block text-sm font-medium text-gray-700 mb-1">Industry</label>
+            <label htmlFor="industry" className="mb-1.5 block text-sm font-semibold text-slate-700">Industry</label>
             <select
               id="industry"
               value={industry}
               onChange={(event) => handleIndustryChange(event.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 shadow-sm outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
             >
               <option value="">All industries</option>
               {allIndustries.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
           </div>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={safeOnly} onChange={(event) => setSafeOnly(event.target.checked)} className="h-4 w-4 rounded border-gray-300" />
-            <span className="text-sm text-gray-700">Show only "Likely Fair Pay" workplaces</span>
+          <label className="flex cursor-pointer items-center gap-2 sm:col-span-2">
+            <input type="checkbox" checked={safeOnly} onChange={(event) => setSafeOnly(event.target.checked)} className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+            <span className="text-sm font-medium text-slate-700">Show only "Likely Fair Pay" workplaces</span>
           </label>
         </div>
-      </FormSection>
+      </section>
 
       <section>
         {loading ? (
-          <p className="py-6 text-center text-gray-500">Loading workplaces...</p>
+          <p className="py-8 text-center text-slate-500">Loading workplaces...</p>
         ) : error ? (
-          <div className="bg-white rounded-2xl shadow-md p-8 text-center">
-            <p className="mb-4 text-gray-600">{error}</p>
-            <button type="button" onClick={() => void loadWorkplaces()} className="font-medium text-blue-600 hover:underline">Retry</button>
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <p className="mb-4 text-slate-600">{error}</p>
+            <button type="button" onClick={() => void loadWorkplaces()} className="rounded-xl px-3 py-2 font-semibold text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">Retry</button>
           </div>
         ) : (
           <>
-            <p className="text-sm text-gray-500 mb-3">{filtered.length} result{filtered.length !== 1 ? "s" : ""} found</p>
+            <p className="mb-3 text-sm font-medium text-slate-500">{filtered.length} result{filtered.length !== 1 ? "s" : ""} found</p>
             {filtered.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-md p-8 text-center">
-                <p className="text-gray-600 mb-4">No workplaces match your search.</p>
-                <Link to="/add-workplace" className="inline-block px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">Add a Workplace</Link>
+              <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+                <p className="mb-4 text-slate-600">No workplaces match your search.</p>
+                <Link to="/add-workplace" className="inline-block rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">Add a Workplace</Link>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="grid gap-4 md:grid-cols-2">
                 {filtered.map((workplace) => (
-                  <Link key={workplace.id} to={`/workplace/${workplace.id}`} className="block bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium">{workplace.name}</h3>
-                        <p className="text-sm text-gray-500">{workplace.suburb} · {workplace.industry}</p>
+                  <Link key={workplace.id} to={`/workplace/${workplace.id}`} className="group block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <h3 className="truncate font-bold text-slate-900 transition-colors group-hover:text-blue-700">{workplace.name}</h3>
+                        <p className="mt-1 text-sm text-slate-500">{workplace.suburb} · {workplace.industry}</p>
                       </div>
                       <SafetyBadge status={workplace.badge} size="sm" />
                     </div>
+                    <p className="mt-5 border-t border-slate-100 pt-4 text-sm font-medium text-slate-500">{workplace.review_count} review{workplace.review_count !== 1 ? "s" : ""}</p>
                   </Link>
                 ))}
               </div>
@@ -118,7 +122,7 @@ export default function SearchPage() {
         )}
       </section>
 
-      <Link to="/home" className="inline-block text-sm text-blue-600 hover:underline">← Back to Home</Link>
+      <Link to="/home" className="inline-block rounded-lg px-2 py-1 text-sm font-semibold text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">← Back to Home</Link>
     </div>
   );
 }

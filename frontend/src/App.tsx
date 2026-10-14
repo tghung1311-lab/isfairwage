@@ -13,9 +13,9 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex min-h-screen flex-col bg-slate-50">
       <AppHeader />
-      <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-8">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
         <Routes>
           <Route path="/" element={<WelcomePage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -29,7 +29,7 @@ export default function App() {
           <Route path="/confirmation" element={<ConfirmationPage />} />
         </Routes>
       </main>
-      <footer className="text-center text-xs text-gray-400 py-4">
+      <footer className="px-4 py-6 text-center text-xs text-slate-400">
         IsFairWage MVP — A coursework project. Not legal advice.
       </footer>
     </div>

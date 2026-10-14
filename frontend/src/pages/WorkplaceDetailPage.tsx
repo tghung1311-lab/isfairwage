@@ -58,33 +58,33 @@ export default function WorkplaceDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-2xl shadow-md p-6">
+    <div className="space-y-8">
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold mb-1">{workplace.name}</h1>
-            <p className="text-gray-600">{workplace.suburb} · {workplace.industry}</p>
+            <h1 className="mb-1 text-3xl font-extrabold tracking-tight text-slate-900">{workplace.name}</h1>
+            <p className="text-slate-600">{workplace.suburb} · {workplace.industry}</p>
           </div>
           <SafetyBadge status={workplace.badge} size="md" />
         </div>
 
         {workplace.average_hourly_pay !== null && (
-          <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-            <div>
-              <p className="text-2xl font-bold">${workplace.average_hourly_pay.toFixed(2)}</p>
-              <p className="text-xs text-gray-500">Avg hourly pay</p>
+          <div className="mt-6 grid grid-cols-2 gap-3 border-t border-slate-200 pt-6 sm:grid-cols-4">
+            <div className="rounded-xl bg-slate-50 p-3 text-center">
+              <p className="text-xl font-extrabold text-slate-900">${workplace.average_hourly_pay.toFixed(2)}</p>
+              <p className="mt-1 text-xs font-medium text-slate-500">Avg hourly pay</p>
             </div>
-            <div>
-              <p className="text-2xl font-bold">${workplace.minimum_wage.toFixed(2)}</p>
-              <p className="text-xs text-gray-500">Minimum wage</p>
+            <div className="rounded-xl bg-slate-50 p-3 text-center">
+              <p className="text-xl font-extrabold text-slate-900">${workplace.minimum_wage.toFixed(2)}</p>
+              <p className="mt-1 text-xs font-medium text-slate-500">Minimum wage</p>
             </div>
-            <div>
-              <p className="text-2xl font-bold">{workplace.review_count}</p>
-              <p className="text-xs text-gray-500">Reviews</p>
+            <div className="rounded-xl bg-slate-50 p-3 text-center">
+              <p className="text-xl font-extrabold text-slate-900">{workplace.review_count}</p>
+              <p className="mt-1 text-xs font-medium text-slate-500">Reviews</p>
             </div>
-            <div>
-              <p className="text-2xl font-bold">{workplace.reviews.filter((review) => review.payslip_provided).length}</p>
-              <p className="text-xs text-gray-500">Got payslip</p>
+            <div className="rounded-xl bg-slate-50 p-3 text-center">
+              <p className="text-xl font-extrabold text-slate-900">{workplace.reviews.filter((review) => review.payslip_provided).length}</p>
+              <p className="mt-1 text-xs font-medium text-slate-500">Got payslip</p>
             </div>
           </div>
         )}
@@ -93,20 +93,20 @@ export default function WorkplaceDetailPage() {
       <FlowButton text="Submit a Review" onClick={() => navigate(`/submit-review/${id}`)} />
 
       <section>
-        <h2 className="text-lg font-semibold mb-3">Reviews ({workplace.review_count})</h2>
+        <h2 className="mb-4 text-xl font-bold text-slate-900">Reviews ({workplace.review_count})</h2>
         {workplace.reviews.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-md p-6 text-center text-gray-500">
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500 shadow-sm">
             No reviews yet. Be the first to share your experience!
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {workplace.reviews.map((review) => (
-              <div key={review.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">${review.hourly_pay.toFixed(2)}/hr · {review.hours_worked} hrs</span>
-                  <span className="text-xs text-gray-400">{new Date(review.created_at).toLocaleDateString()}</span>
+              <div key={review.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-base font-bold text-slate-900">${review.hourly_pay.toFixed(2)}/hr · {review.hours_worked} hrs</span>
+                  <span className="text-xs font-medium text-slate-400">{new Date(review.created_at).toLocaleDateString()}</span>
                 </div>
-                <div className="flex gap-3 text-xs text-gray-500">
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium text-slate-500">
                   <span>{review.payslip_provided ? "✅ Payslip provided" : "❌ No payslip"}</span>
                   <span>{review.reviewer_label}</span>
                 </div>
@@ -116,7 +116,7 @@ export default function WorkplaceDetailPage() {
         )}
       </section>
 
-      <Link to="/home" className="inline-block text-sm text-blue-600 hover:underline">← Back to Home</Link>
+      <Link to="/home" className="inline-block rounded-lg px-2 py-1 text-sm font-semibold text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2">← Back to Home</Link>
     </div>
   );
 }

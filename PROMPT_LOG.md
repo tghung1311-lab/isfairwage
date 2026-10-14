@@ -47,3 +47,7 @@
 **Result:** Vercel build, routing, and FastAPI entry-point configuration prepared without deployment
 **Problems:** none
 **Decisions:** one Vercel project serves the React build and FastAPI API; deployment configuration uses dashboard environment variables and the frontend calls the same-origin `/api` path
+
+## D0 - Brand icon
+**Prompt:** Add a reusable shield-and-dollar brand icon matching the favicon to the header and welcome page, preserve all other behavior, build the frontend, and commit on `design` without pushing.
+**Result:** Added `BrandIcon`, displayed it beside the header wordmark and above the welcome heading, verified the frontend production build, and committed the requested change.

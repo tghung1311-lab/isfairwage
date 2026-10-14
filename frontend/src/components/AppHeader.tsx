@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import BrandIcon from "./BrandIcon";
 
 export default function AppHeader() {
   const { user, loading, logout } = useAuth();
@@ -14,8 +15,9 @@ export default function AppHeader() {
   return (
     <header className="w-full border-b border-gray-200 bg-white">
       <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-        <Link to="/" className="font-bold text-gray-900 hover:text-blue-700">
-          IsFairWage
+        <Link to="/" className="flex items-center gap-2 font-bold text-gray-900 hover:text-blue-700">
+          <BrandIcon className="h-8 w-8 shrink-0 text-blue-600" />
+          <span>IsFairWage</span>
         </Link>
         {!loading && (
           user ? (

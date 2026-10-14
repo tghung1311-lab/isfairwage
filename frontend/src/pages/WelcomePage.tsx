@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
+import BrandIcon from "../components/BrandIcon";
 import PrimaryButton from "../components/ui/PrimaryButton";
 
 export default function WelcomePage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh]">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-md p-8">
+        <BrandIcon className="mx-auto mb-3 h-16 w-16 text-blue-600" />
         <h1 className="text-2xl font-bold text-center mb-2">IsFairWage</h1>
         <p className="text-gray-500 text-center mb-8">
           Check if you&apos;re being paid fairly before accepting casual work.

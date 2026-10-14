@@ -17,3 +17,15 @@
 **Result:** 4 workplaces, 9 reviews, RLS enabled, commit 9c94744
 **Problems:** none
 **Decisions:** RLS on with no public policies; only the backend accesses the DB via DATABASE_URL
+
+## M4 - Authentication
+**Prompt:** (to be added)
+**Result:** Supabase Auth signup, login, session restore, protected write routes, commit 84f5097
+**Problems:** none
+**Decisions:** FastAPI calls Supabase Auth REST directly; frontend stores only the access token locally
+
+## M5 - Read APIs
+**Prompt:** (to be added)
+**Result:** 4 workplaces with backend-computed badges, read APIs, frontend wired to API
+**Problems:** none
+**Decisions:** read screens use database APIs and backend-computed badges; localStorage writes remain temporary until M6

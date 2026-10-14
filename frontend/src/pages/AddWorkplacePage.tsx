@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import type { Workplace } from "../types";
+import type { LocalWorkplace } from "../types";
 import FormSection from "../components/ui/FormSection";
 import PrimaryButton from "../components/ui/PrimaryButton";
 
 interface Props {
-  onAddWorkplace: (workplace: Workplace) => void;
+  onAddWorkplace: (workplace: LocalWorkplace) => void;
 }
 
 export default function AddWorkplacePage({ onAddWorkplace }: Props) {
@@ -47,7 +47,7 @@ export default function AddWorkplacePage({ onAddWorkplace }: Props) {
       return;
     }
 
-    const newWorkplace: Workplace = {
+    const newWorkplace: LocalWorkplace = {
       id: `wp-${Date.now()}`,
       name: name.trim(),
       suburb: suburb.trim(),

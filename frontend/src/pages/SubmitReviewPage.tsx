@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import type { Workplace, Review } from "../types";
+import type { LocalWorkplace, LocalReview } from "../types";
 import FormSection from "../components/ui/FormSection";
 import PrimaryButton from "../components/ui/PrimaryButton";
 
 interface Props {
-  workplaces: Workplace[];
-  onSubmitReview: (review: Review) => void;
+  workplaces: LocalWorkplace[];
+  onSubmitReview: (review: LocalReview) => void;
 }
 
 export default function SubmitReviewPage({ workplaces, onSubmitReview }: Props) {
@@ -77,7 +77,7 @@ export default function SubmitReviewPage({ workplaces, onSubmitReview }: Props) 
     }
 
     /* PATTERN: Callbacks Up — report review to App.tsx */
-    const review: Review = {
+    const review: LocalReview = {
       id: `rv-${Date.now()}`,
       workplaceId: id!,
       hourlyPay: hp,
@@ -175,7 +175,7 @@ export default function SubmitReviewPage({ workplaces, onSubmitReview }: Props) 
       </FormSection>
 
       <Link to={`/workplace/${id}`} className="inline-block text-sm text-blue-600 hover:underline">
-        ← Back to {workplace.name}
+        ← Back to {workplace?.name ?? "Workplace"}
       </Link>
     </div>
   );

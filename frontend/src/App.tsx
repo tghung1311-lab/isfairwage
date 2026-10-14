@@ -25,7 +25,7 @@
 
 import { useState, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
-import { Workplace, Review } from "./types";
+import { LocalWorkplace, LocalReview } from "./types";
 import WelcomePage from "./pages/WelcomePage";
 import HomePage from "./pages/HomePage";
 import SearchPage from "./pages/SearchPage";
@@ -39,14 +39,14 @@ import AppHeader from "./components/AppHeader";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 /* Seed data — used only when localStorage is empty */
-const SEED_WORKPLACES: Workplace[] = [
+const SEED_WORKPLACES: LocalWorkplace[] = [
   { id: "wp-001", name: "Bean & Brew Café", suburb: "Carlton", industry: "Hospitality" },
   { id: "wp-002", name: "Golden Dragon Restaurant", suburb: "Melbourne CBD", industry: "Hospitality" },
   { id: "wp-003", name: "QuickMart Convenience", suburb: "Footscray", industry: "Retail" },
   { id: "wp-004", name: "SparkleClean Services", suburb: "Box Hill", industry: "Cleaning" },
 ];
 
-const SEED_REVIEWS: Review[] = [
+const SEED_REVIEWS: LocalReview[] = [
   { id: "rv-001", workplaceId: "wp-001", hourlyPay: 24.0, hoursWorked: 20, payslipProvided: true, isAnonymous: true, reviewerEmail: "", createdAt: "2024-06-10T09:00:00Z" },
   { id: "rv-002", workplaceId: "wp-001", hourlyPay: 22.0, hoursWorked: 15, payslipProvided: false, isAnonymous: false, reviewerEmail: "student@example.com", createdAt: "2024-07-02T14:30:00Z" },
   { id: "rv-003", workplaceId: "wp-002", hourlyPay: 18.5, hoursWorked: 25, payslipProvided: false, isAnonymous: true, reviewerEmail: "", createdAt: "2024-05-20T11:00:00Z" },
@@ -69,10 +69,10 @@ function loadFromStorage<T>(key: string, fallback: T[]): T[] {
 }
 
 export default function App() {
-  const [workplaces, setWorkplaces] = useState<Workplace[]>(() =>
+  const [workplaces, setWorkplaces] = useState<LocalWorkplace[]>(() =>
     loadFromStorage(WP_KEY, SEED_WORKPLACES)
   );
-  const [reviews, setReviews] = useState<Review[]>(() =>
+  const [reviews, setReviews] = useState<LocalReview[]>(() =>
     loadFromStorage(RV_KEY, SEED_REVIEWS)
   );
 
@@ -80,10 +80,10 @@ export default function App() {
   useEffect(() => { localStorage.setItem(RV_KEY, JSON.stringify(reviews)); }, [reviews]);
 
   /** PATTERN: Callbacks Up — called by AddWorkplacePage */
-  function handleAddWorkplace(wp: Workplace) { setWorkplaces((prev) => [...prev, wp]); }
+  function handleAddWorkplace(wp: LocalWorkplace) { setWorkplaces((prev) => [...prev, wp]); }
 
   /** PATTERN: Callbacks Up — called by SubmitReviewPage */
-  function handleSubmitReview(rv: Review) { setReviews((prev) => [...prev, rv]); }
+  function handleSubmitReview(rv: LocalReview) { setReviews((prev) => [...prev, rv]); }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -93,12 +93,9 @@ export default function App() {
           <Route path="/" element={<WelcomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
-          {/* PATTERN: Props Down — workplaces & reviews passed in */}
-          <Route path="/home" element={<HomePage workplaces={workplaces} reviews={reviews} />} />
-          {/* PATTERN: Props Down */}
-          <Route path="/search" element={<SearchPage workplaces={workplaces} reviews={reviews} />} />
-          {/* PATTERN: Props Down */}
-          <Route path="/workplace/:id" element={<WorkplaceDetailPage workplaces={workplaces} reviews={reviews} />} />
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/workplace/:id" element={<WorkplaceDetailPage />} />
           {/* PATTERN: Props Down + Callbacks Up */}
           <Route path="/submit-review/:id" element={<ProtectedRoute><SubmitReviewPage workplaces={workplaces} onSubmitReview={handleSubmitReview} /></ProtectedRoute>} />
           {/* PATTERN: Callbacks Up */}

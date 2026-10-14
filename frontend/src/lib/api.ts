@@ -1,3 +1,5 @@
+import type { WorkplaceDetail, WorkplaceSummary } from "../types";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api";
 
 interface ApiErrorResponse {
@@ -52,4 +54,25 @@ export async function apiRequest<T>(
     }
     throw new ApiError("Unable to reach the server. Please try again.");
   }
+}
+
+export interface WorkplaceFilters {
+  search?: string;
+  industry?: string;
+  suburb?: string;
+}
+
+export function getWorkplaces(filters: WorkplaceFilters = {}) {
+  const params = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(filters)) {
+    if (value?.trim()) params.set(key, value.trim());
+  }
+
+  const query = params.toString();
+  return apiRequest<WorkplaceSummary[]>(`/workplaces${query ? `?${query}` : ""}`);
+}
+
+export function getWorkplace(id: string) {
+  return apiRequest<WorkplaceDetail>(`/workplaces/${encodeURIComponent(id)}`);
 }

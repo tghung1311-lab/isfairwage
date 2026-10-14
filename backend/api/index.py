@@ -3,8 +3,10 @@ import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 import httpx
+import psycopg2
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +15,21 @@ from pydantic import BaseModel, field_validator
 
 BACKEND_DIRECTORY = Path(__file__).resolve().parent.parent
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+
+# $33.05 is $26.44 national minimum wage plus 25% casual loading.
+MINIMUM_WAGE = 33.05
+
+
+def calculate_badge(average_hourly_pay: float | None) -> str:
+    if average_hourly_pay is None or average_hourly_pay <= 0:
+        return "not-enough-data"
+
+    ratio = average_hourly_pay / MINIMUM_WAGE
+    if ratio >= 1.10:
+        return "green"
+    if ratio >= 0.90:
+        return "amber"
+    return "red"
 
 
 class SignupRequest(BaseModel):
@@ -104,6 +121,36 @@ def clean_auth_response(payload: dict[str, Any]) -> AuthResponse:
     )
 
 
+def run_database_query(
+    request: Request,
+    query: str,
+    parameters: tuple[Any, ...] = (),
+) -> list[tuple[Any, ...]]:
+    try:
+        with psycopg2.connect(request.app.state.database_url) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(query, parameters)
+                return cursor.fetchall()
+    except psycopg2.Error as error:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to load workplace data right now. Please try again.",
+        ) from error
+
+
+def workplace_summary_from_row(row: tuple[Any, ...]) -> dict[str, Any]:
+    average = float(row[5]) if row[5] is not None else None
+    return {
+        "id": str(row[0]),
+        "name": row[1],
+        "suburb": row[2],
+        "industry": row[3],
+        "review_count": row[4],
+        "average_hourly_pay": average,
+        "badge": calculate_badge(average),
+    }
+
+
 def auth_headers(request: Request) -> dict[str, str]:
     return {
         "apikey": request.app.state.supabase_publishable_key,
@@ -190,12 +237,14 @@ async def lifespan(app: FastAPI):
     load_dotenv(BACKEND_DIRECTORY / ".env")
     supabase_url = os.getenv("SUPABASE_URL", "").rstrip("/")
     supabase_publishable_key = os.getenv("SUPABASE_PUBLISHABLE_KEY", "")
+    database_url = os.getenv("DATABASE_URL", "")
 
     missing_variables = [
         variable
         for variable, value in {
             "SUPABASE_URL": supabase_url,
             "SUPABASE_PUBLISHABLE_KEY": supabase_publishable_key,
+            "DATABASE_URL": database_url,
         }.items()
         if not value
     ]
@@ -206,6 +255,7 @@ async def lifespan(app: FastAPI):
 
     app.state.supabase_url = supabase_url
     app.state.supabase_publishable_key = supabase_publishable_key
+    app.state.database_url = database_url
     yield
 
 
@@ -291,3 +341,88 @@ async def login(payload: LoginRequest, request: Request) -> AuthResponse:
 @app.get("/api/auth/me", response_model=UserResponse)
 async def me(current_user: UserResponse = Depends(get_current_user)) -> UserResponse:
     return current_user
+
+
+@app.get("/api/workplaces")
+def get_workplaces(
+    request: Request,
+    search: str | None = None,
+    industry: str | None = None,
+    suburb: str | None = None,
+) -> list[dict[str, Any]]:
+    cleaned_search = search.strip() if search and search.strip() else None
+    cleaned_industry = industry.strip() if industry and industry.strip() else None
+    cleaned_suburb = suburb.strip() if suburb and suburb.strip() else None
+    query = """
+        SELECT w.id, w.name, w.suburb, w.industry,
+               COUNT(r.id) AS review_count,
+               ROUND(AVG(r.hourly_pay), 2) AS average_hourly_pay
+        FROM public.workplaces AS w
+        LEFT JOIN public.reviews AS r ON r.workplace_id = w.id
+        WHERE (%s IS NULL OR w.name ILIKE '%%' || %s || '%%' OR w.suburb ILIKE '%%' || %s || '%%')
+          AND (%s IS NULL OR w.industry ILIKE %s)
+          AND (%s IS NULL OR w.suburb ILIKE %s)
+        GROUP BY w.id, w.name, w.suburb, w.industry
+        ORDER BY w.name
+    """
+    rows = run_database_query(
+        request,
+        query,
+        (
+            cleaned_search,
+            cleaned_search,
+            cleaned_search,
+            cleaned_industry,
+            cleaned_industry,
+            cleaned_suburb,
+            cleaned_suburb,
+        ),
+    )
+    return [workplace_summary_from_row(row) for row in rows]
+
+
+@app.get("/api/workplaces/{workplace_id}")
+def get_workplace(workplace_id: UUID, request: Request) -> dict[str, Any]:
+    workplace_query = """
+        SELECT w.id, w.name, w.suburb, w.industry,
+               COUNT(r.id) AS review_count,
+               ROUND(AVG(r.hourly_pay), 2) AS average_hourly_pay
+        FROM public.workplaces AS w
+        LEFT JOIN public.reviews AS r ON r.workplace_id = w.id
+        WHERE w.id = %s
+        GROUP BY w.id, w.name, w.suburb, w.industry
+    """
+    workplace_rows = run_database_query(request, workplace_query, (str(workplace_id),))
+    if not workplace_rows:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workplace not found.")
+
+    review_query = """
+        SELECT r.id, r.hourly_pay, r.hours_worked, r.payslip_provided,
+               r.is_anonymous, r.created_at,
+               CASE
+                   WHEN r.is_anonymous THEN 'Anonymous'
+                   WHEN NULLIF(TRIM(auth_user.raw_user_meta_data ->> 'full_name'), '') IS NOT NULL
+                       THEN auth_user.raw_user_meta_data ->> 'full_name'
+                   ELSE 'Community member'
+               END AS reviewer_label
+        FROM public.reviews AS r
+        LEFT JOIN auth.users AS auth_user ON auth_user.id = r.user_id
+        WHERE r.workplace_id = %s
+        ORDER BY r.created_at DESC
+    """
+    review_rows = run_database_query(request, review_query, (str(workplace_id),))
+    workplace = workplace_summary_from_row(workplace_rows[0])
+    workplace["minimum_wage"] = MINIMUM_WAGE
+    workplace["reviews"] = [
+        {
+            "id": str(row[0]),
+            "hourly_pay": float(row[1]),
+            "hours_worked": float(row[2]),
+            "payslip_provided": row[3],
+            "is_anonymous": row[4],
+            "created_at": row[5].isoformat(),
+            "reviewer_label": row[6],
+        }
+        for row in review_rows
+    ]
+    return workplace

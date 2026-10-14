@@ -35,3 +35,9 @@
 **Result:** authenticated workplace and review creation APIs, frontend forms connected to database
 **Problems:** none
 **Decisions:** database writes require backend-verified Supabase tokens; frontend no longer stores workplace or review data locally
+
+## M7 - Polish
+**Prompt:** (to be added)
+**Result:** original favicon, project README, environment examples, and safe repository cleanup
+**Problems:** none
+**Decisions:** documentation uses environment variable names and placeholder values only; application behavior and APIs remain unchanged

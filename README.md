@@ -18,10 +18,13 @@ IsFairWage is a student-focused pay safety checker for comparing workplace pay r
 │   ├── sql/                 # Database schema and seed data
 │   ├── setup_database.py    # Database setup script
 │   └── requirements.txt     # Python dependencies
+├── api/                     # Vercel FastAPI entry point
 ├── frontend/
 │   ├── public/              # Static assets, including the favicon
 │   ├── src/                 # React pages, components, API client, and types
 │   └── package.json         # Frontend scripts and dependencies
+├── requirements.txt         # Vercel Python dependencies
+├── vercel.json              # Vercel build and routing configuration
 ├── PROMPT_LOG.md            # Milestone prompt and decision log
 └── README.md
 ```
@@ -55,6 +58,8 @@ Copy the example files before running locally. Use real project values only in i
 - `VITE_API_BASE_URL`
 
 The tracked `.env.example` files show safe placeholder formats only.
+
+The root `requirements.txt` is used by Vercel. Keep it in sync with `backend/requirements.txt` whenever backend dependencies change.
 
 ## Run locally on Windows PowerShell
 
@@ -94,7 +99,31 @@ The script applies the schema, enables the intended database protections, and cr
 
 ## Deployment
 
-Deployment documentation will be completed after Milestone 8.
+This repository is prepared for one Vercel project that serves both the React build and the FastAPI API. Deployment itself is not performed by this repository.
+
+### Vercel project settings
+
+- **Root Directory:** `./`
+- **Framework Preset:** `Other`
+- **Build configuration:** use the committed `vercel.json`; the frontend uses its `vercel-build` script.
+
+### Vercel environment variables
+
+Add these variable names in the Vercel dashboard for each environment you deploy:
+
+- `SUPABASE_URL`
+- `SUPABASE_PUBLISHABLE_KEY`
+- `DATABASE_URL`
+- `APP_BASE_URL`
+
+Set `APP_BASE_URL` to the deployed Vercel site URL for that environment. The committed frontend production configuration uses the relative `/api` path, so it calls the API served by the same Vercel project.
+
+### Deployment considerations
+
+- The Vercel dashboard variables are required because deployed functions do not use `backend/.env`.
+- Supabase Auth and PostgreSQL must be reachable from the Vercel Python function.
+- Serverless execution limits can affect slow external authentication or database requests.
+- This project uses the requested `builds` configuration in `vercel.json`; verify compatibility with the selected Vercel project settings before deploying.
 
 ## Demo data
 

@@ -41,3 +41,9 @@
 **Result:** original favicon, project README, environment examples, and safe repository cleanup
 **Problems:** none
 **Decisions:** documentation uses environment variable names and placeholder values only; application behavior and APIs remain unchanged
+
+## M8 - Deployment preparation
+**Prompt:** (to be added)
+**Result:** Vercel build, routing, and FastAPI entry-point configuration prepared without deployment
+**Problems:** none
+**Decisions:** one Vercel project serves the React build and FastAPI API; deployment configuration uses dashboard environment variables and the frontend calls the same-origin `/api` path

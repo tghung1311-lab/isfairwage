@@ -29,3 +29,9 @@
 **Result:** 4 workplaces with backend-computed badges, read APIs, frontend wired to API
 **Problems:** none
 **Decisions:** read screens use database APIs and backend-computed badges; localStorage writes remain temporary until M6
+
+## M6 - Write APIs
+**Prompt:** (to be added)
+**Result:** authenticated workplace and review creation APIs, frontend forms connected to database
+**Problems:** none
+**Decisions:** database writes require backend-verified Supabase tokens; frontend no longer stores workplace or review data locally

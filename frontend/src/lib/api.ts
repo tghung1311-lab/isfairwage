@@ -1,13 +1,20 @@
-import type { WorkplaceDetail, WorkplaceSummary } from "../types";
+import type {
+  CreateReviewData,
+  CreateReviewResponse,
+  CreateWorkplaceData,
+  WorkplaceDetail,
+  WorkplaceSummary,
+} from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api";
 
 interface ApiErrorResponse {
   detail?: string;
+  code?: string;
 }
 
 export class ApiError extends Error {
-  constructor(message: string, public readonly status?: number) {
+  constructor(message: string, public readonly status?: number, public readonly code?: string) {
     super(message);
     this.name = "ApiError";
   }
@@ -44,7 +51,14 @@ export async function apiRequest<T>(
         responseBody && typeof responseBody === "object" && "detail" in responseBody
           ? responseBody.detail
           : "Something went wrong. Please try again.";
-      throw new ApiError(typeof message === "string" ? message : "Something went wrong.", response.status);
+      const code = responseBody && typeof responseBody === "object" && "code" in responseBody
+        ? responseBody.code
+        : undefined;
+      throw new ApiError(
+        typeof message === "string" ? message : "Something went wrong.",
+        response.status,
+        typeof code === "string" ? code : undefined
+      );
     }
 
     return responseBody as T;
@@ -75,4 +89,24 @@ export function getWorkplaces(filters: WorkplaceFilters = {}) {
 
 export function getWorkplace(id: string) {
   return apiRequest<WorkplaceDetail>(`/workplaces/${encodeURIComponent(id)}`);
+}
+
+function getStoredToken() {
+  return localStorage.getItem("isfairwage_token");
+}
+
+export function createWorkplace(data: CreateWorkplaceData) {
+  return apiRequest<WorkplaceSummary>("/workplaces", {
+    method: "POST",
+    body: data,
+    token: getStoredToken(),
+  });
+}
+
+export function createReview(workplaceId: string, data: CreateReviewData) {
+  return apiRequest<CreateReviewResponse>(`/workplaces/${encodeURIComponent(workplaceId)}/reviews`, {
+    method: "POST",
+    body: data,
+    token: getStoredToken(),
+  });
 }

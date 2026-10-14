@@ -1,182 +1,117 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import type { LocalWorkplace, LocalReview } from "../types";
+import { ApiError, createReview } from "../lib/api";
 import FormSection from "../components/ui/FormSection";
 import PrimaryButton from "../components/ui/PrimaryButton";
 
-interface Props {
-  workplaces: LocalWorkplace[];
-  onSubmitReview: (review: LocalReview) => void;
-}
-
-export default function SubmitReviewPage({ workplaces, onSubmitReview }: Props) {
+export default function SubmitReviewPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const workplace = workplaces.find((w) => w.id === id);
-
   const [hourlyPay, setHourlyPay] = useState("");
   const [hoursWorked, setHoursWorked] = useState("");
   const [payslipProvided, setPayslipProvided] = useState<boolean | null>(null);
   const [isAnonymous, setIsAnonymous] = useState(true);
-  const [reviewerEmail, setReviewerEmail] = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [serverError, setServerError] = useState("");
 
+  const hourlyPayNumber = Number(hourlyPay);
+  const hoursWorkedNumber = Number(hoursWorked);
   const errors: Record<string, string> = {};
-  const hp = parseFloat(hourlyPay);
-  const hw = parseFloat(hoursWorked);
 
   if (touched.hourlyPay) {
-    if (hourlyPay.trim() === "") errors.hourlyPay = "Hourly pay is required";
-    else if (isNaN(hp) || hp <= 0) errors.hourlyPay = "Must be a positive number";
+    if (!hourlyPay.trim()) errors.hourlyPay = "Hourly pay is required";
+    else if (!Number.isFinite(hourlyPayNumber) || hourlyPayNumber <= 0) errors.hourlyPay = "Must be a positive number";
   }
   if (touched.hoursWorked) {
-    if (hoursWorked.trim() === "") errors.hoursWorked = "Hours worked is required";
-    else if (isNaN(hw) || hw <= 0) errors.hoursWorked = "Must be a positive number";
+    if (!hoursWorked.trim()) errors.hoursWorked = "Hours worked is required";
+    else if (!Number.isFinite(hoursWorkedNumber) || hoursWorkedNumber <= 0) errors.hoursWorked = "Must be a positive number";
   }
-  if (touched.payslipProvided && payslipProvided === null) {
-    errors.payslipProvided = "Please select an option";
-  }
-  if (!isAnonymous && touched.reviewerEmail && reviewerEmail.trim() === "") {
-    errors.reviewerEmail = "Email is required when not anonymous";
-  }
+  if (touched.payslipProvided && payslipProvided === null) errors.payslipProvided = "Please select an option";
 
-  const isValid =
-    hourlyPay.trim() !== "" && !isNaN(hp) && hp > 0 &&
-    hoursWorked.trim() !== "" && !isNaN(hw) && hw > 0 &&
-    payslipProvided !== null &&
-    (isAnonymous || reviewerEmail.trim() !== "");
+  const isValid = Boolean(
+    hourlyPay.trim() && Number.isFinite(hourlyPayNumber) && hourlyPayNumber > 0 &&
+    hoursWorked.trim() && Number.isFinite(hoursWorkedNumber) && hoursWorkedNumber > 0 &&
+    payslipProvided !== null
+  );
 
   function handleBlur(field: string) {
-    setTouched((prev) => ({ ...prev, [field]: true }));
+    setTouched((previous) => ({ ...previous, [field]: true }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const allTouched: Record<string, boolean> = {
-      hourlyPay: true, hoursWorked: true, payslipProvided: true, reviewerEmail: true,
-    };
-    setTouched(allTouched);
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    setTouched({ hourlyPay: true, hoursWorked: true, payslipProvided: true });
+    setServerError("");
 
-    if (!isValid) {
-      navigate("/confirmation", {
-        state: { success: false, message: "Please fill in all required fields correctly." },
-      });
+    if (!isValid || !id) {
+      navigate("/confirmation", { state: { success: false, message: "Please fill in all required fields correctly." } });
       return;
     }
 
-    /* Business-rule: flag unrealistic pay rates for manual review */
-    if (hp > 80) {
+    setSubmitting(true);
+    try {
+      await createReview(id, {
+        hourly_pay: hourlyPayNumber,
+        hours_worked: hoursWorkedNumber,
+        payslip_provided: payslipProvided!,
+        is_anonymous: isAnonymous,
+      });
       navigate("/confirmation", {
         state: {
-          success: false,
-          message:
-            "This pay rate looks unusual and needs manual review before it can be added. Please double-check the amount, or contact support if this is correct.",
+          success: true,
+          message: "Thank you! Your review has been submitted successfully.",
+          destination: `/workplace/${id}`,
+          destinationLabel: "View Workplace",
         },
       });
-      return;
+    } catch (error) {
+      if (error instanceof ApiError && error.code === "PAY_TOO_HIGH") {
+        navigate("/confirmation", {
+          state: {
+            success: false,
+            message: "This pay rate looks unusual and needs manual review before it can be added. Please double-check the amount, or contact support if this is correct.",
+          },
+        });
+      } else {
+        setServerError(error instanceof ApiError ? error.message : "Unable to submit this review. Please try again.");
+      }
+    } finally {
+      setSubmitting(false);
     }
-
-    /* PATTERN: Callbacks Up — report review to App.tsx */
-    const review: LocalReview = {
-      id: `rv-${Date.now()}`,
-      workplaceId: id!,
-      hourlyPay: hp,
-      hoursWorked: hw,
-      payslipProvided: payslipProvided!,
-      isAnonymous,
-      reviewerEmail: isAnonymous ? "" : reviewerEmail,
-      createdAt: new Date().toISOString(),
-    };
-    onSubmitReview(review);
-
-    /* PATTERN: Router State — pass result to ConfirmationPage */
-    navigate("/confirmation", {
-      state: { success: true, message: "Thank you! Your review has been submitted successfully." },
-    });
-  }
-
-  if (!workplace) {
-    return (
-      <div className="text-center py-16">
-        <h1 className="text-2xl font-bold mb-4">Workplace not found</h1>
-        <Link to="/home" className="text-blue-600 hover:underline">← Back to Home</Link>
-      </div>
-    );
   }
 
   return (
     <div className="space-y-6">
-      <FormSection title="Submit a Review" subtitle={`Share your pay experience at ${workplace.name} (${workplace.suburb}).`}>
+      <FormSection title="Submit a Review" subtitle="Your experience can help other students make safer choices.">
         <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Hourly Pay */}
-        <div>
-          <label htmlFor="hourlyPay" className="block text-sm font-medium text-gray-700 mb-1">Hourly pay (AUD) *</label>
-          <input id="hourlyPay" type="number" step="0.01" value={hourlyPay}
-            onChange={(e) => setHourlyPay(e.target.value)}
-            onBlur={() => handleBlur("hourlyPay")}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g. 23.50" />
-          {errors.hourlyPay && <p className="mt-1 text-sm text-red-600">{errors.hourlyPay}</p>}
-        </div>
-
-        {/* Hours Worked */}
-        <div>
-          <label htmlFor="hoursWorked" className="block text-sm font-medium text-gray-700 mb-1">Hours worked per week *</label>
-          <input id="hoursWorked" type="number" step="0.5" value={hoursWorked}
-            onChange={(e) => setHoursWorked(e.target.value)}
-            onBlur={() => handleBlur("hoursWorked")}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g. 20" />
-          {errors.hoursWorked && <p className="mt-1 text-sm text-red-600">{errors.hoursWorked}</p>}
-        </div>
-
-        {/* Payslip */}
-        <div>
-          <p className="block text-sm font-medium text-gray-700 mb-2">Were you given a payslip? *</p>
-          <div className="flex gap-4">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="payslip" checked={payslipProvided === true}
-                onChange={() => { setPayslipProvided(true); handleBlur("payslipProvided"); }} className="h-4 w-4" />
-              <span className="text-sm">Yes</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="payslip" checked={payslipProvided === false}
-                onChange={() => { setPayslipProvided(false); handleBlur("payslipProvided"); }} className="h-4 w-4" />
-              <span className="text-sm">No</span>
-            </label>
-          </div>
-          {errors.payslipProvided && <p className="mt-1 text-sm text-red-600">{errors.payslipProvided}</p>}
-        </div>
-
-        {/* Anonymous toggle */}
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={isAnonymous}
-            onChange={(e) => setIsAnonymous(e.target.checked)} className="h-4 w-4 rounded border-gray-300" />
-          <span className="text-sm text-gray-700">Submit anonymously</span>
-        </label>
-
-        {/* Email (only if not anonymous) */}
-        {!isAnonymous && (
           <div>
-            <label htmlFor="reviewerEmail" className="block text-sm font-medium text-gray-700 mb-1">Your email *</label>
-            <input id="reviewerEmail" type="email" value={reviewerEmail}
-              onChange={(e) => setReviewerEmail(e.target.value)}
-              onBlur={() => handleBlur("reviewerEmail")}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="you@example.com" />
-            {errors.reviewerEmail && <p className="mt-1 text-sm text-red-600">{errors.reviewerEmail}</p>}
+            <label htmlFor="hourlyPay" className="block text-sm font-medium text-gray-700 mb-1">Hourly pay (AUD) *</label>
+            <input id="hourlyPay" type="number" step="0.01" value={hourlyPay} onChange={(event) => setHourlyPay(event.target.value)} onBlur={() => handleBlur("hourlyPay")} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. 23.50" />
+            {errors.hourlyPay && <p className="mt-1 text-sm text-red-600">{errors.hourlyPay}</p>}
           </div>
-        )}
-
-        <PrimaryButton type="submit" disabled={!isValid}>
-          Submit Review
-        </PrimaryButton>
-      </form>
+          <div>
+            <label htmlFor="hoursWorked" className="block text-sm font-medium text-gray-700 mb-1">Hours worked per week *</label>
+            <input id="hoursWorked" type="number" step="0.01" value={hoursWorked} onChange={(event) => setHoursWorked(event.target.value)} onBlur={() => handleBlur("hoursWorked")} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. 20" />
+            {errors.hoursWorked && <p className="mt-1 text-sm text-red-600">{errors.hoursWorked}</p>}
+          </div>
+          <div>
+            <p className="block text-sm font-medium text-gray-700 mb-2">Were you given a payslip? *</p>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="payslip" checked={payslipProvided === true} onChange={() => { setPayslipProvided(true); handleBlur("payslipProvided"); }} className="h-4 w-4" /><span className="text-sm">Yes</span></label>
+              <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="payslip" checked={payslipProvided === false} onChange={() => { setPayslipProvided(false); handleBlur("payslipProvided"); }} className="h-4 w-4" /><span className="text-sm">No</span></label>
+            </div>
+            {errors.payslipProvided && <p className="mt-1 text-sm text-red-600">{errors.payslipProvided}</p>}
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={isAnonymous} onChange={(event) => setIsAnonymous(event.target.checked)} className="h-4 w-4 rounded border-gray-300" />
+            <span className="text-sm text-gray-700">Submit anonymously</span>
+          </label>
+          {serverError && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{serverError}</p>}
+          <PrimaryButton type="submit" disabled={!isValid || submitting}>{submitting ? "Submitting review..." : "Submit Review"}</PrimaryButton>
+        </form>
       </FormSection>
-
-      <Link to={`/workplace/${id}`} className="inline-block text-sm text-blue-600 hover:underline">
-        ← Back to {workplace?.name ?? "Workplace"}
-      </Link>
+      <Link to={`/workplace/${id}`} className="inline-block text-sm text-blue-600 hover:underline">← Back to Workplace</Link>
     </div>
   );
 }

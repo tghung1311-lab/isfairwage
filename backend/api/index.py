@@ -1,16 +1,19 @@
 import os
 import re
 from contextlib import asynccontextmanager
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 from uuid import UUID
 
 import httpx
 import psycopg2
+from psycopg2 import errorcodes
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, field_validator
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, StrictBool, field_validator
 
 
 BACKEND_DIRECTORY = Path(__file__).resolve().parent.parent
@@ -18,6 +21,16 @@ EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
 # $33.05 is $26.44 national minimum wage plus 25% casual loading.
 MINIMUM_WAGE = 33.05
+ALLOWED_INDUSTRIES = (
+    "Hospitality",
+    "Retail",
+    "Cleaning",
+    "Construction",
+    "Agriculture",
+    "Healthcare",
+    "Education",
+    "Other",
+)
 
 
 def calculate_badge(average_hourly_pay: float | None) -> str:
@@ -77,6 +90,58 @@ class LoginRequest(BaseModel):
     def validate_password(cls, value: str) -> str:
         if not value:
             raise ValueError("Password is required.")
+        return value
+
+
+class CreateWorkplaceRequest(BaseModel):
+    name: str
+    suburb: str
+    industry: str
+
+    @field_validator("name", "suburb")
+    @classmethod
+    def validate_workplace_text(cls, value: str) -> str:
+        cleaned_value = value.strip()
+        if not cleaned_value:
+            raise ValueError("This field is required.")
+        if len(cleaned_value) > 100:
+            raise ValueError("This field must be 100 characters or fewer.")
+        return cleaned_value
+
+    @field_validator("industry")
+    @classmethod
+    def validate_industry(cls, value: str) -> str:
+        cleaned_value = value.strip()
+        if cleaned_value not in ALLOWED_INDUSTRIES:
+            raise ValueError("Please select a valid industry.")
+        return cleaned_value
+
+
+class CreateReviewRequest(BaseModel):
+    hourly_pay: Decimal
+    hours_worked: Decimal
+    payslip_provided: StrictBool
+    is_anonymous: StrictBool
+
+    @field_validator("hourly_pay", "hours_worked")
+    @classmethod
+    def validate_two_decimal_places(cls, value: Decimal) -> Decimal:
+        if value.as_tuple().exponent < -2:
+            raise ValueError("This value can have at most 2 decimal places.")
+        return value
+
+    @field_validator("hourly_pay")
+    @classmethod
+    def validate_hourly_pay(cls, value: Decimal) -> Decimal:
+        if value <= 0:
+            raise ValueError("Hourly pay must be greater than 0.")
+        return value
+
+    @field_validator("hours_worked")
+    @classmethod
+    def validate_hours_worked(cls, value: Decimal) -> Decimal:
+        if value <= 0 or value > 100:
+            raise ValueError("Hours worked must be greater than 0 and no more than 100.")
         return value
 
 
@@ -148,6 +213,18 @@ def workplace_summary_from_row(row: tuple[Any, ...]) -> dict[str, Any]:
         "review_count": row[4],
         "average_hourly_pay": average,
         "badge": calculate_badge(average),
+    }
+
+
+def review_from_row(row: tuple[Any, ...]) -> dict[str, Any]:
+    return {
+        "id": str(row[0]),
+        "hourly_pay": float(row[1]),
+        "hours_worked": float(row[2]),
+        "payslip_provided": row[3],
+        "is_anonymous": row[4],
+        "created_at": row[5].isoformat(),
+        "reviewer_label": row[6],
     }
 
 
@@ -426,3 +503,125 @@ def get_workplace(workplace_id: UUID, request: Request) -> dict[str, Any]:
         for row in review_rows
     ]
     return workplace
+
+
+@app.post("/api/workplaces", status_code=status.HTTP_201_CREATED)
+def create_workplace(
+    payload: CreateWorkplaceRequest,
+    request: Request,
+    current_user: UserResponse = Depends(get_current_user),
+) -> dict[str, Any]:
+    query = """
+        INSERT INTO public.workplaces (name, suburb, industry, created_by)
+        VALUES (%s, %s, %s, %s)
+        RETURNING id, name, suburb, industry
+    """
+    try:
+        with psycopg2.connect(request.app.state.database_url) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    query,
+                    (payload.name, payload.suburb, payload.industry, current_user.id),
+                )
+                row = cursor.fetchone()
+    except psycopg2.IntegrityError as error:
+        if error.pgcode == errorcodes.UNIQUE_VIOLATION:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This workplace has already been added.",
+            ) from error
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to add this workplace right now. Please try again.",
+        ) from error
+    except psycopg2.Error as error:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to add this workplace right now. Please try again.",
+        ) from error
+
+    return {
+        "id": str(row[0]),
+        "name": row[1],
+        "suburb": row[2],
+        "industry": row[3],
+        "review_count": 0,
+        "average_hourly_pay": None,
+        "badge": "not-enough-data",
+    }
+
+
+@app.post(
+    "/api/workplaces/{workplace_id}/reviews",
+    status_code=status.HTTP_201_CREATED,
+    response_model=None,
+)
+def create_review(
+    workplace_id: UUID,
+    payload: CreateReviewRequest,
+    request: Request,
+    current_user: UserResponse = Depends(get_current_user),
+) -> dict[str, Any] | JSONResponse:
+    if payload.hourly_pay > 80:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={
+                "detail": "Hourly pay above $80 cannot be accepted.",
+                "code": "PAY_TOO_HIGH",
+            },
+        )
+
+    workplace_query = "SELECT id FROM public.workplaces WHERE id = %s"
+    review_query = """
+        INSERT INTO public.reviews (
+            workplace_id, user_id, hourly_pay, hours_worked, payslip_provided, is_anonymous
+        )
+        VALUES (%s, %s, %s, %s, %s, %s)
+        RETURNING id, hourly_pay, hours_worked, payslip_provided, is_anonymous, created_at
+    """
+    aggregate_query = """
+        SELECT COUNT(id), ROUND(AVG(hourly_pay), 2)
+        FROM public.reviews
+        WHERE workplace_id = %s
+    """
+    try:
+        with psycopg2.connect(request.app.state.database_url) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(workplace_query, (str(workplace_id),))
+                if cursor.fetchone() is None:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Workplace not found.",
+                    )
+
+                cursor.execute(
+                    review_query,
+                    (
+                        str(workplace_id),
+                        current_user.id,
+                        payload.hourly_pay,
+                        payload.hours_worked,
+                        payload.payslip_provided,
+                        payload.is_anonymous,
+                    ),
+                )
+                review_row = cursor.fetchone()
+                cursor.execute(aggregate_query, (str(workplace_id),))
+                review_count, average = cursor.fetchone()
+    except HTTPException:
+        raise
+    except psycopg2.Error as error:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unable to submit this review right now. Please try again.",
+        ) from error
+
+    reviewer_label = "Anonymous" if payload.is_anonymous else (current_user.full_name or "Community member")
+    review = review_from_row((*review_row, reviewer_label))
+    average_hourly_pay = float(average) if average is not None else None
+    return {
+        "review": review,
+        "review_count": review_count,
+        "average_hourly_pay": average_hourly_pay,
+        "badge": calculate_badge(average_hourly_pay),
+    }

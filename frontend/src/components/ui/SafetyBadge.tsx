@@ -1,4 +1,4 @@
-import type { Badge } from "../../utils/badgeLogic";
+import type { Badge } from "../../types";
 
 interface SafetyBadgeProps {
   status: Badge;

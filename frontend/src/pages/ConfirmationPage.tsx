@@ -4,6 +4,8 @@ import PrimaryButton from "../components/ui/PrimaryButton";
 interface ConfirmationState {
   success: boolean;
   message: string;
+  destination?: string;
+  destinationLabel?: string;
 }
 
 export default function ConfirmationPage() {
@@ -33,8 +35,8 @@ export default function ConfirmationPage() {
         <p className="text-gray-600 mb-8">{message}</p>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <PrimaryButton variant="primary" fullWidth={false} onClick={() => navigate("/home")}>
-            Go to Home
+          <PrimaryButton variant="primary" fullWidth={false} onClick={() => navigate(state?.destination ?? "/home")}>
+            {state?.destinationLabel ?? "Go to Home"}
           </PrimaryButton>
           <PrimaryButton variant="secondary" fullWidth={false} onClick={() => navigate("/search")}>
             Search Workplaces

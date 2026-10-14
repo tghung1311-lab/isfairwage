@@ -59,3 +59,7 @@
 ## D2 - Workplace photos
 **Prompt:** Add nullable workplace photo support in the database and API, display seeded and user-provided images with industry fallbacks, serve public workplace photos on Vercel, and document photo credits without changing badge, privacy, or other behavior.
 **Result:** Added image URL persistence and validation, reusable workplace-image rendering with fallbacks, seeded demo mappings and static deployment routing, optional photo URL entry, photo-credit placeholders, and frontend build verification.
+
+## D3 - 3D background
+**Prompt:** Add a lazy-loaded, subtle Three.js animated background behind the WelcomePage hero with a readable blue gradient, reduced-motion and WebGL fallbacks, lifecycle cleanup, and no application behavior changes.
+**Result:** Added a responsive Three.js hero scene with floating blue-toned discs and spheres, gentle parallax, visibility pausing, capped pixel density, disposal cleanup, and a WelcomePage gradient while preserving existing content.

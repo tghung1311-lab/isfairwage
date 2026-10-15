@@ -131,10 +131,10 @@ The demo businesses and review data in this project are fictional and are provid
 
 ## Photo credits
 
-The workplace photos are used for fictional demo workplaces only.
+The workplace photos are free stock images from Unsplash, used for fictional demo workplaces only.
 
-- Bean & Brew Café — Photographer name, source: Unsplash
-- Golden Dragon Restaurant — Photographer name, source: Unsplash
-- QuickMart Convenience — Photographer name, source: Unsplash
-- SparkleClean Services — Photographer name, source: Unsplash
-- RiceRoll — Photographer name, source: Unsplash
+- Bean & Brew Café: Petr Sevcovic, Unsplash
+- Golden Dragon Restaurant: Niels Steeman, Unsplash
+- QuickMart Convenience: Morgan Vander Hart, Unsplash
+- SparkleClean Services: Josue Michel, Unsplash
+- RiceRoll: Qiming Chen, Unsplash
